@@ -125,7 +125,7 @@ function lessonNav(no, where) {
     ? el('a', { class: 'navbtn', href: '#' + t.no, title: `${t.no}차시 ${t.title}` }, label)
     : el('span', { class: 'navbtn off', 'aria-disabled': 'true' }, label);
   const sel = el('select', { class: 'tocsel', 'aria-label': '차시 목차에서 고르기' });
-  sel.append(el('option', { value: '' }, '📋 차시 목록'));
+  sel.append(el('option', { value: '' }, '📋 단원 목록으로'));
   for (const [u, name] of Object.entries(UNITS)) {
     const items = TOC.filter(t => t.unit == u && (t.ready || t.no === no));
     if (!items.length) continue;
@@ -134,26 +134,49 @@ function lessonNav(no, where) {
     sel.append(g);
   }
   sel.addEventListener('change', () => { location.hash = sel.value; });
+  const unitList = el('a', { class: 'navbtn mid', href: '#u' + (tocItem(no) || {}).unit }, '📋 차시 목록');
   return el('nav', { class: 'lessonnav ' + where, 'aria-label': '차시 이동' },
-    btn(prev, '◀ 이전 차시'), where === 'top' ? sel : el('a', { class: 'navbtn mid', href: '#' }, '📋 차시 목록'), btn(next, '다음 차시 ▶'));
+    btn(prev, '◀ 이전 차시'), where === 'top' ? sel : unitList, btn(next, '다음 차시 ▶'));
 }
 
+// 'Ⅱ. 각도' → ['Ⅱ', '각도']
+const splitUnit = name => { const m = String(name).match(/^\s*([^.\s]+)\.\s*(.+)$/); return m ? [m[1], m[2]] : ['', name]; };
+
+/* 단원 목록: 네모 칸 6개 (3×2) */
 function renderIndex() {
   document.title = `달성 수학 10분 ${GRADE} 심화`;
   app.replaceChildren(
     el('header', { class: 'top' },
       el('div', { class: 'eyebrow' }, '대구광역시달성교육지원청'),
-      el('h1', {}, `달성 수학 10분 ${GRADE} · 심화 문항`)),
-    ...Object.entries(UNITS).map(([u, name]) => {
-      const ready = READY.filter(t => t.unit == u);
-      return [
-        el('div', { class: 'unitname' }, name, ready.length ? null : el('span', { class: 'soon' }, '준비 중')),
-        ready.length ? el('div', { class: 'list' }, ready.map(t =>
-          el('a', { href: '#' + t.no }, el('b', {}, t.no + '차시'), t.title, el('span', {}, LESSONS[t.no].pages)))) : null,
-      ];
-    }),
+      el('h1', {}, `달성 수학 10분 ${GRADE} · 심화 문항`),
+      el('div', { class: 'pages' }, '단원을 고르세요')),
+    el('div', { class: 'unitgrid' }, Object.entries(UNITS).map(([u, name]) => {
+      const [roman, title] = splitUnit(name);
+      const n = READY.filter(t => t.unit == u).length;
+      return el('a', { class: 'unitbox' + (n ? '' : ' empty'), href: '#u' + u },
+        el('span', { class: 'roman' }, roman),
+        el('span', { class: 'uname' }, title),
+        el('span', { class: 'ucount' }, n ? `심화 문항 ${n}차시` : '준비 중'));
+    })),
     el('p', { style: 'text-align:center;margin-top:28px' }, el('a', { class: 'back', href: '../' }, '← 학년 선택'))
   );
+  window.scrollTo(0, 0);
+}
+
+/* 한 단원의 차시 목록 */
+function renderUnit(u) {
+  const name = UNITS[u];
+  document.title = `${name} · 달성 수학 10분 ${GRADE}`;
+  app.replaceChildren(
+    el('header', { class: 'top' },
+      el('div', { class: 'eyebrow' }, `달성 수학 10분 ${GRADE} · 심화 문항`),
+      el('h1', {}, name)),
+    el('div', { class: 'list' }, TOC.filter(t => t.unit == u).map(t => t.ready
+      ? el('a', { href: '#' + t.no }, el('b', {}, t.no + '차시'), t.title, el('span', {}, LESSONS[t.no].pages))
+      : el('div', { class: 'soonitem' }, el('b', {}, t.no + '차시'), '준비 중'))),
+    el('p', { style: 'text-align:center;margin-top:28px' }, el('a', { class: 'back', href: '#' }, '← 단원 목록'))
+  );
+  window.scrollTo(0, 0);
 }
 
 function renderPending(no) {
@@ -168,7 +191,7 @@ function renderPending(no) {
       el('div', { class: 'big' }, '🛠️'),
       el('p', {}, `${no}차시 심화 문항은 아직 준비 중이에요.`),
       el('p', { class: 'sub' }, '위의 목록에서 다른 차시를 골라 풀어 보세요.')),
-    el('p', { style: 'text-align:center' }, el('a', { class: 'back', href: '#' }, `← ${GRADE} 차시 목록`))
+    el('p', { style: 'text-align:center' }, el('a', { class: 'back', href: '#u' + t.unit }, `← ${splitUnit(UNITS[t.unit]).join(' ')} 차시 목록`))
   );
   window.scrollTo(0, 0);
 }
@@ -221,6 +244,7 @@ function renderLesson(no) {
         inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) check(); });
         part.append(inp);
         if (p.unit) part.append(el('span', { class: 'unit' }, p.unit));
+        part.append(inkButton(inp, p, `${no}차시 ${qi + 1}번${p.label ? ' · ' + p.label : ''}`));
         getters.push(() => inp.value);
       } else if (p.kind === 'choice') {
         let sel = Array.isArray(saved) ? saved.slice() : [];
@@ -242,8 +266,9 @@ function renderLesson(no) {
       } else if (p.kind === 'essay') {
         const ta = el('textarea', { class: 'ans', placeholder: p.placeholder || '까닭을 쓰세요', 'aria-label': (p.label || '답') + ' 입력' });
         ta.value = saved || '';
-        part.append(ta);
+        part.append(ta, inkButton(ta, p, `${no}차시 ${qi + 1}번${p.label ? ' · ' + p.label : ''}`));
         part.style.width = '100%';
+        part.classList.add('essaypart');
         getters.push(() => ta.value);
       }
       partEls.push(part);
@@ -293,12 +318,23 @@ function renderLesson(no) {
   window.scrollTo(0, 0);
 }
 
+// 손글씨 버튼 (assets/ink.js 가 있으면)
+function inkButton(target, part, label) {
+  if (typeof openInkPad !== 'function') return null;
+  return el('button', { type: 'button', class: 'inkbtn', title: '손글씨로 쓰기', 'aria-label': '손글씨로 답 쓰기',
+    onclick: () => openInkPad(target, part, label) }, '✍️');
+}
+
 function route() {
-  const raw = decodeURIComponent(location.hash.slice(1)).replace(/[^0-9]/g, '');
+  const h = decodeURIComponent(location.hash.slice(1));
+  const unit = h.match(/^u(\d+)$/);
+  const raw = h.replace(/[^0-9]/g, '');
   const no = raw ? raw.padStart(2, '0') : '';
-  if (LESSONS[no]) renderLesson(no);
+  if (unit && UNITS[unit[1]]) renderUnit(unit[1]);
+  else if (LESSONS[no]) renderLesson(no);
   else if (tocItem(no)) renderPending(no);
   else renderIndex();
+  if (typeof scratchSwitch === 'function') scratchSwitch(LESSONS[no] ? GRADE + '#' + no : null);
 }
 
 /* 그림 크게 보기 */

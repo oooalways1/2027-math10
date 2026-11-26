@@ -139,3 +139,94 @@ button.check:active { transform: translateY(1px); }
   .lessonnav.top .navbtn { flex: 1; justify-content: center; }
   .navbtn { padding: 8px 10px; font-size: 15px; }
 }
+
+/* 단원 목록: 네모 칸 3×2 */
+.unitgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }
+.unitbox {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center;
+  min-height: 150px; padding: 18px 10px; text-decoration: none; color: var(--ink);
+  background: var(--card); border: 2px solid var(--accent); border-radius: 16px;
+}
+.unitbox .roman { font-size: 34px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+.unitbox .uname { font-size: 20px; font-weight: 700; }
+.unitbox .ucount { font-size: 14px; color: var(--muted); }
+.unitbox.empty { border-color: var(--line); background: #fbfcfd; }
+.unitbox.empty .roman { color: #b6bdc9; }
+.unitbox.empty .uname { color: var(--muted); }
+.list .soonitem { display: block; background: #f6f7f9; border: 2px dashed var(--line); border-radius: 14px; padding: 12px 14px; color: var(--muted); }
+.list .soonitem b { color: #9aa3b2; margin-right: 6px; }
+@media (max-width: 520px) {
+  .unitgrid { gap: 8px; }
+  .unitbox { min-height: 112px; padding: 12px 6px; }
+  .unitbox .roman { font-size: 26px; }
+  .unitbox .uname { font-size: 16px; }
+  .unitbox .ucount { font-size: 12px; }
+}
+
+/* ✍️ 손글씨 답 버튼 */
+.inkbtn {
+  flex: none; font-size: 20px; line-height: 1; padding: 7px 9px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line); background: var(--card);
+}
+.inkbtn:hover { border-color: var(--accent); }
+.part.essaypart { flex-wrap: wrap; align-items: flex-start; }
+.part.essaypart textarea.ans { flex: 1 1 260px; }
+input.ans.inkfilled, textarea.ans.inkfilled { animation: inkflash 1.6s ease-out; }
+@keyframes inkflash { 0%, 40% { box-shadow: 0 0 0 4px #ffd54a; border-color: #e0a800; } 100% { box-shadow: none; } }
+
+/* ✏️ 필기 (화면 위에 쓰기) */
+#scratch { position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; touch-action: auto; }
+body.scratch-drawing #scratch { pointer-events: auto; touch-action: none; cursor: crosshair; }
+.scratchfab {
+  position: fixed; right: 16px; bottom: 16px; z-index: 6; display: none;
+  font: inherit; font-size: 18px; font-weight: 700; padding: 12px 18px; border-radius: 999px; cursor: pointer;
+  border: none; background: var(--accent); color: #fff; box-shadow: 0 6px 18px rgba(30, 60, 120, .3);
+}
+body.scratch-avail .scratchfab { display: block; }
+body.scratch-on .scratchfab { display: none; }
+.scratchbar {
+  position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 7; display: none;
+  flex-wrap: wrap; justify-content: center; gap: 6px; max-width: calc(100% - 24px);
+  background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 8px; box-shadow: 0 6px 18px rgba(30, 60, 120, .2);
+}
+body.scratch-on .scratchbar { display: flex; }
+.scratchbar .tool, #inkpad .tool {
+  font: inherit; font-size: 15px; font-weight: 600; padding: 7px 11px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line); background: #fff; color: var(--ink); white-space: nowrap;
+}
+.scratchbar .tool[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.scratchbar .tool.color { padding: 7px 9px; }
+.scratchbar .tool.color span { display: block; width: 18px; height: 18px; border-radius: 50%; }
+.scratchbar .tool.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.scratch-on main { padding-bottom: 120px; }
+
+/* ✍️ 손글씨 입력 창 */
+#inkpad { position: fixed; inset: 0; z-index: 20; display: none; align-items: flex-end; justify-content: center; background: rgba(15, 20, 30, .45); }
+#inkpad.open { display: flex; }
+#inkpad .sheet {
+  width: 100%; max-width: 760px; background: var(--card); border-radius: 18px 18px 0 0; padding: 14px 16px 18px;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, .2);
+}
+#inkpad .padhead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+#inkpad .padlabel { color: var(--muted); font-size: 15px; flex: 1; }
+#inkpad .padx { font: inherit; font-size: 20px; border: none; background: none; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+#inkpad .padarea {
+  position: relative; border: 2px solid var(--accent); border-radius: 14px; overflow: hidden;
+  background: #fff linear-gradient(transparent calc(100% - 52px), #e6eefc calc(100% - 52px), #e6eefc calc(100% - 50px), transparent calc(100% - 50px));
+}
+#inkpad canvas { display: block; touch-action: none; cursor: crosshair; }
+#inkpad .padguide { position: absolute; inset: 0; display: grid; place-items: center; color: #c3cad6; font-size: 22px; pointer-events: none; }
+#inkpad .padguide[hidden] { display: none; }
+#inkpad .padtools { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+#inkpad .padstatus { color: var(--muted); font-size: 15px; }
+#inkpad .padcands { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 44px; }
+#inkpad .cand {
+  font: inherit; font-size: 20px; padding: 6px 14px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line); background: #fff; color: var(--ink);
+}
+#inkpad .cand[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+#inkpad .padfoot { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+#inkpad .padnote { flex: 1; font-size: 14px; color: var(--muted); }
+#inkpad .padok { font: inherit; font-weight: 700; font-size: 18px; padding: 10px 22px; border: none; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer; }
+body.pad-open { overflow: hidden; }
+@media print { #scratch, .scratchfab, .scratchbar, #inkpad, .inkbtn { display: none !important; } }
