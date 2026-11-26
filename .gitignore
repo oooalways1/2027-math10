@@ -12,3 +12,7 @@ node_modules/
 !.dev.vars.example
 .env*
 !.env.example
+.dev.vars
+
+# QR은 로그인한 관리 페이지에서만 (tools/make_qr.py 로 언제든 다시 만듦)
+qr/

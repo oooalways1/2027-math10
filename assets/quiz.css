@@ -114,3 +114,28 @@ button.check:active { transform: translateY(1px); }
   .card { padding: 14px; }
   input.ans { width: 110px; }
 }
+
+/* 차시 이동 (목차) */
+.lessonnav { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
+.lessonnav.bottom { margin: 8px 0 0; justify-content: center; }
+.navbtn {
+  flex: none; display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px;
+  border: 2px solid var(--line); background: var(--card); color: var(--accent); text-decoration: none;
+  font-size: 16px; font-weight: 600; white-space: nowrap;
+}
+.navbtn.off { color: #b6bdc9; }
+.tocsel {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 10px;
+  border: 2px solid var(--accent); background: var(--card); color: var(--ink);
+}
+.unitname .soon { font-size: 13px; font-weight: 600; color: var(--muted); background: #e9ecf1; border-radius: 6px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
+.card.pending { text-align: center; padding: 32px 18px; }
+.card.pending .big { font-size: 44px; }
+.card.pending p { margin: 6px 0; font-size: 20px; font-weight: 600; }
+.card.pending p.sub { font-size: 16px; font-weight: 400; color: var(--muted); }
+@media (max-width: 520px) {
+  .lessonnav.top { flex-wrap: wrap; }
+  .lessonnav.top .tocsel { order: -1; flex-basis: 100%; }
+  .lessonnav.top .navbtn { flex: 1; justify-content: center; }
+  .navbtn { padding: 8px 10px; font-size: 15px; }
+}

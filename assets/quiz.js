@@ -106,19 +106,71 @@ function dataTable(t) {
   return el('div', { class: 'tablewrap' }, tbl);
 }
 
+/* ================= 목차 ================= */
+// 단원마다 LESSONS_PER_UNIT 개 차시: 1단원 01~06, 2단원 07~12 …
+const PER_UNIT = typeof LESSONS_PER_UNIT === 'number' ? LESSONS_PER_UNIT : 6;
+const TOC = Object.keys(UNITS).map(Number).sort((a, b) => a - b).flatMap(u =>
+  Array.from({ length: PER_UNIT }, (_, k) => {
+    const no = String((u - 1) * PER_UNIT + k + 1).padStart(2, '0');
+    return { no, unit: u, ready: !!LESSONS[no], title: LESSONS[no] ? LESSONS[no].title : '' };
+  }));
+const READY = TOC.filter(t => t.ready);
+const tocItem = no => TOC.find(t => t.no === no);
+
+function lessonNav(no, where) {
+  const i = READY.findIndex(t => t.no === no);
+  const prev = i > 0 ? READY[i - 1] : (i === -1 ? [...READY].reverse().find(t => t.no < no) : null);
+  const next = i >= 0 ? READY[i + 1] : READY.find(t => t.no > no);
+  const btn = (t, label) => t
+    ? el('a', { class: 'navbtn', href: '#' + t.no, title: `${t.no}차시 ${t.title}` }, label)
+    : el('span', { class: 'navbtn off', 'aria-disabled': 'true' }, label);
+  const sel = el('select', { class: 'tocsel', 'aria-label': '차시 목차에서 고르기' });
+  sel.append(el('option', { value: '' }, '📋 차시 목록'));
+  for (const [u, name] of Object.entries(UNITS)) {
+    const items = TOC.filter(t => t.unit == u && (t.ready || t.no === no));
+    if (!items.length) continue;
+    const g = el('optgroup', { label: name });
+    items.forEach(t => g.append(el('option', { value: t.no, selected: t.no === no }, `${t.no}차시 ${t.ready ? t.title : '(준비 중)'}`)));
+    sel.append(g);
+  }
+  sel.addEventListener('change', () => { location.hash = sel.value; });
+  return el('nav', { class: 'lessonnav ' + where, 'aria-label': '차시 이동' },
+    btn(prev, '◀ 이전 차시'), where === 'top' ? sel : el('a', { class: 'navbtn mid', href: '#' }, '📋 차시 목록'), btn(next, '다음 차시 ▶'));
+}
+
 function renderIndex() {
   document.title = `달성 수학 10분 ${GRADE} 심화`;
   app.replaceChildren(
     el('header', { class: 'top' },
       el('div', { class: 'eyebrow' }, '대구광역시달성교육지원청'),
       el('h1', {}, `달성 수학 10분 ${GRADE} · 심화 문항`)),
-    ...Object.entries(UNITS).map(([u, name]) => [
-      el('div', { class: 'unitname' }, name),
-      el('div', { class: 'list' }, Object.entries(LESSONS).filter(([, L]) => L.unit == u).map(([no, L]) =>
-        el('a', { href: '#' + no }, el('b', {}, no + '차시'), L.title, el('span', {}, L.pages))))
-    ]),
+    ...Object.entries(UNITS).map(([u, name]) => {
+      const ready = READY.filter(t => t.unit == u);
+      return [
+        el('div', { class: 'unitname' }, name, ready.length ? null : el('span', { class: 'soon' }, '준비 중')),
+        ready.length ? el('div', { class: 'list' }, ready.map(t =>
+          el('a', { href: '#' + t.no }, el('b', {}, t.no + '차시'), t.title, el('span', {}, LESSONS[t.no].pages)))) : null,
+      ];
+    }),
     el('p', { style: 'text-align:center;margin-top:28px' }, el('a', { class: 'back', href: '../' }, '← 학년 선택'))
   );
+}
+
+function renderPending(no) {
+  const t = tocItem(no);
+  document.title = `${no}차시 · 달성 수학 10분`;
+  app.replaceChildren(
+    el('header', { class: 'top' },
+      el('div', { class: 'eyebrow' }, `달성 수학 10분 ${GRADE} · ` + UNITS[t.unit]),
+      el('h1', {}, el('span', { class: 'no' }, no), '차시')),
+    lessonNav(no, 'top'),
+    el('section', { class: 'card pending' },
+      el('div', { class: 'big' }, '🛠️'),
+      el('p', {}, `${no}차시 심화 문항은 아직 준비 중이에요.`),
+      el('p', { class: 'sub' }, '위의 목록에서 다른 차시를 골라 풀어 보세요.')),
+    el('p', { style: 'text-align:center' }, el('a', { class: 'back', href: '#' }, `← ${GRADE} 차시 목록`))
+  );
+  window.scrollTo(0, 0);
 }
 
 function renderLesson(no) {
@@ -137,6 +189,7 @@ function renderLesson(no) {
       el('div', { class: 'eyebrow' }, `달성 수학 10분 ${GRADE} · ` + UNITS[L.unit]),
       el('h1', {}, el('span', { class: 'no' }, no), L.title),
       el('div', { class: 'pages' }, L.pages + ' 심화 문항 · 연습장에 풀고 답만 쓰세요')),
+    lessonNav(no, 'top'),
   ];
   if (L.shared) {
     blocks.push(el('section', { class: 'card shared' },
@@ -234,15 +287,18 @@ function renderLesson(no) {
     blocks.push(card);
   });
 
-  blocks.push(scoreEl, el('p', { style: 'text-align:center' }, el('a', { class: 'back', href: '#' }, `← ${GRADE} 차시 목록`)));
+  blocks.push(scoreEl, lessonNav(no, 'bottom'));
   app.replaceChildren(...blocks);
   updateScore();
   window.scrollTo(0, 0);
 }
 
 function route() {
-  const no = decodeURIComponent(location.hash.slice(1)).replace(/[^0-9]/g, '').padStart(2, '0');
-  if (LESSONS[no]) renderLesson(no); else renderIndex();
+  const raw = decodeURIComponent(location.hash.slice(1)).replace(/[^0-9]/g, '');
+  const no = raw ? raw.padStart(2, '0') : '';
+  if (LESSONS[no]) renderLesson(no);
+  else if (tocItem(no)) renderPending(no);
+  else renderIndex();
 }
 
 /* 그림 크게 보기 */

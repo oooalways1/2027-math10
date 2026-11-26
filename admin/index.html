@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>QR 보관함 · 달성 수학 10분</title>
+<style>
+  :root { color-scheme: light; --bg: #f4f6f9; --card: #fff; --ink: #1d2433; --muted: #5d6779; --line: #d9dee7; --accent: #2f6fde; --accent-soft: #e6eefc; --ok: #17924a; --ok-soft: #e5f6ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); word-break: keep-all;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif; font-size: 17px; line-height: 1.5; }
+  main { max-width: 1080px; margin: 0 auto; padding: 16px 16px 64px; }
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 0 16px; }
+  .eyebrow { font-size: 15px; color: var(--muted); font-weight: 600; }
+  h1 { font-size: 26px; margin: 2px 0 0; line-height: 1.3; }
+  .logout { font-size: 15px; color: var(--accent); text-decoration: none; border: 2px solid var(--line); background: var(--card); border-radius: 10px; padding: 6px 12px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
+  .bar label { font-weight: 600; }
+  select, .btn { font: inherit; font-size: 16px; padding: 7px 12px; border-radius: 10px; border: 2px solid var(--line); background: #fff; color: var(--ink); }
+  .btn { text-decoration: none; cursor: pointer; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg { display: inline-flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 16px; border: none; background: #fff; padding: 7px 12px; cursor: pointer; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .spacer { flex: 1; }
+  .count { color: var(--muted); font-size: 15px; }
+  .unitname { font-size: 18px; font-weight: 700; margin: 22px 0 10px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .qr { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .qr.ready { border-color: #b9e2c8; }
+  .qr img { width: 100%; height: auto; border-radius: 6px; background: #fff; }
+  .qr .no { font-weight: 700; }
+  .qr .title { font-size: 15px; color: var(--muted); min-height: 1.5em; }
+  .badge { align-self: flex-start; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 2px 8px; background: #e9ecf1; color: var(--muted); }
+  .ready .badge { background: var(--ok-soft); color: var(--ok); }
+  .qr .row { display: flex; gap: 6px; }
+  .qr .row .btn { flex: 1; text-align: center; font-size: 14px; padding: 6px 8px; }
+  .url { font-size: 12px; color: var(--muted); word-break: break-all; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  @media print {
+    body { background: #fff; }
+    header.top .logout, .bar, .qr .row, .url, .badge { display: none !important; }
+    .qr { break-inside: avoid; border: 1px solid #ccc; }
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div>
+      <div class="eyebrow">달성 수학 10분 · 관리</div>
+      <h1>QR 보관함</h1>
+    </div>
+    <a class="logout" href="/admin/logout">로그아웃</a>
+  </header>
+
+  <div class="bar">
+    <label for="grade">학년</label>
+    <select id="grade"></select>
+    <div class="seg" role="group" aria-label="보기">
+      <button type="button" data-show="ready" aria-pressed="true">문항 있는 차시</button>
+      <button type="button" data-show="all" aria-pressed="false">전체 차시</button>
+    </div>
+    <span class="count" id="count"></span>
+    <span class="spacer"></span>
+    <a class="btn" id="zipReady" download>⬇ 문항 있는 차시 ZIP</a>
+    <a class="btn primary" id="zipAll" download>⬇ 전체 ZIP</a>
+    <button type="button" class="btn" onclick="window.print()">🖨 인쇄</button>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let manifest = {}, show = 'ready';
+try { show = localStorage.getItem('qr-show') || 'ready'; } catch (e) {}
+
+function render() {
+  const g = $('#grade').value, M = manifest[g];
+  if (!M) { $('#list').innerHTML = '<p class="empty">QR이 없습니다.</p>'; return; }
+  $('#zipAll').href = 'qr/' + M.zipAll;
+  $('#zipReady').href = 'qr/' + M.zipReady;
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.show === show)));
+  const items = M.lessons.filter(t => show === 'all' || t.ready);
+  $('#count').textContent = `${items.length}개 (전체 ${M.lessons.length}개 중 문항 있음 ${M.lessons.filter(t => t.ready).length}개)`;
+  const list = $('#list');
+  list.replaceChildren();
+  const units = [...new Set(items.map(t => t.unit))];
+  if (!units.length) { list.innerHTML = '<p class="empty">문항이 들어간 차시가 아직 없어요.</p>'; return; }
+  for (const u of units) {
+    const its = items.filter(t => t.unit === u);
+    const h = document.createElement('div'); h.className = 'unitname'; h.textContent = `${g} · ${its[0].unitName}`;
+    const grid = document.createElement('div'); grid.className = 'grid';
+    for (const t of its) {
+      const c = document.createElement('div'); c.className = 'qr' + (t.ready ? ' ready' : '');
+      const name = `${g}_${t.no}차시.png`;
+      c.innerHTML = `<span class="badge">${t.ready ? '문항 있음' : '준비 중'}</span>
+        <img src="qr/${t.file}" alt="${g} ${t.no}차시 QR" loading="lazy">
+        <div class="no">${t.no}차시</div><div class="title"></div>
+        <div class="url"></div>
+        <div class="row"><a class="btn" download="${name}" href="qr/${t.file}">⬇ PNG</a><a class="btn" target="_blank" rel="noopener" href="${t.url}">열어 보기</a></div>`;
+      c.querySelector('.title').textContent = t.title || t.unitName;
+      c.querySelector('.url').textContent = t.url;
+      grid.append(c);
+    }
+    list.append(h, grid);
+  }
+}
+
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  show = b.dataset.show; try { localStorage.setItem('qr-show', show); } catch (e) {} render();
+}));
+$('#grade').addEventListener('change', render);
+
+fetch('qr/manifest.json', { cache: 'no-store' }).then(r => r.json()).then(m => {
+  manifest = m;
+  const grades = Object.keys(m).sort();
+  $('#grade').replaceChildren(...grades.map(g => Object.assign(document.createElement('option'), { value: g, textContent: g })));
+  render();
+}).catch(() => { $('#list').innerHTML = '<p class="empty">QR 목록을 불러오지 못했어요.</p>'; });
+</script>
+</body>
+</html>
