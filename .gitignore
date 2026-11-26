@@ -1,0 +1,6 @@
+# 작업용 파일 (사이트에는 안 올림)
+그림/
+*.md
+!README.md
+.claude/
+__pycache__/
