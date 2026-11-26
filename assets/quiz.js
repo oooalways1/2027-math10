@@ -1,5 +1,5 @@
 /* 달성 수학 10분 — 공통 채점·화면 엔진 (모든 학년이 같이 씀)
-   각 학년 폴더의 data.js 가 GRADE, UNITS, UNIT_ICONS, LESSONS 를 정의합니다. */
+   각 학년 폴더의 data.js 가 GRADE, UNITS, LESSONS 를 정의합니다. */
 
 /* ================= 채점 ================= */
 const noSpace = s => String(s).replace(/\s+/g, '');
@@ -75,7 +75,7 @@ const el = (tag, attrs = {}, ...kids) => {
 function figure(src, alt) {
   const img = el('img', { src: 'img/' + src, alt: alt || '문제 그림', loading: 'lazy' });
   img.addEventListener('click', () => openZoom(img.src));
-  return el('figure', {}, img, el('figcaption', {}, '🔍 그림을 누르면 크게 볼 수 있어요'));
+  return el('figure', {}, img, el('figcaption', {}, '그림을 누르면 크게 볼 수 있어요'));
 }
 function dataTable(t) {
   const tbl = el('table', { class: 'data' });
@@ -83,24 +83,19 @@ function dataTable(t) {
   t.rows.forEach((r, i) => tbl.append(el('tr', {}, r.map((c, j) => el(i === 0 || j === 0 ? 'th' : 'td', {}, c)))));
   return el('div', { class: 'tablewrap' }, tbl);
 }
-const lessonDone = no => { const st = state[no] || {}; return LESSONS[no].qs.every((q, i) => (st[i] || {}).ok); };
 
 function renderIndex() {
   document.title = `달성 수학 10분 ${GRADE} 심화`;
   app.replaceChildren(
-    el('header', { class: 'hero' },
-      el('div', { class: 'chips' }, el('span', { class: 'chip' }, '✨ 달성 수학 10분'), el('span', { class: 'chip' }, GRADE + ' 심화 문항')),
-      el('h1', {}, el('span', { class: 'no' }, GRADE), '차시를 골라요'),
-      el('p', {}, '교재의 QR을 찍으면 그 차시로 바로 들어가요.')),
+    el('header', { class: 'top' },
+      el('div', { class: 'eyebrow' }, '대구광역시달성교육지원청'),
+      el('h1', {}, `달성 수학 10분 ${GRADE} · 심화 문항`)),
     ...Object.entries(UNITS).map(([u, name]) => [
-      el('div', { class: 'unitname' }, UNIT_ICONS[u] || '📘', name),
+      el('div', { class: 'unitname' }, name),
       el('div', { class: 'list' }, Object.entries(LESSONS).filter(([, L]) => L.unit == u).map(([no, L]) =>
-        el('a', { class: 'lesson', href: '#' + no },
-          el('span', { class: 'num' }, no),
-          el('span', { class: 't' }, L.title, el('span', { class: 'p' }, L.pages)),
-          lessonDone(no) ? el('span', { class: 'done', title: '모두 맞힘' }, '⭐') : null)))
+        el('a', { href: '#' + no }, el('b', {}, no + '차시'), L.title, el('span', {}, L.pages))))
     ]),
-    el('p', { class: 'foot', style: 'margin-top:32px' }, el('a', { class: 'back', href: '../' }, '← 학년 선택'))
+    el('p', { style: 'text-align:center;margin-top:28px' }, el('a', { class: 'back', href: '../' }, '← 학년 선택'))
   );
 }
 
@@ -109,28 +104,21 @@ function renderLesson(no) {
   document.title = `${no}차시 ${L.title} · 달성 수학 10분`;
   const st = state[no] = state[no] || {};
 
-  const fill = el('div', { class: 'fill' });
-  const ptxt = el('span', { class: 'txt' });
-  const clear = el('div');
+  const scoreEl = el('div', { class: 'score' });
   const updateScore = () => {
     const n = L.qs.filter((q, i) => (st[i] || {}).ok).length;
-    fill.style.width = (n / L.qs.length * 100) + '%';
-    ptxt.textContent = `${n} / ${L.qs.length} 정답`;
-    clear.replaceChildren(...(n === L.qs.length ? [el('div', { class: 'allclear' }, '🎉 모두 맞혔어요! 멋져요!')] : []));
+    scoreEl.textContent = n ? `${L.qs.length}문제 중 ${n}문제 맞혔어요` + (n === L.qs.length ? ' 🎉' : '') : '';
   };
 
   const blocks = [
-    el('header', { class: 'hero' },
-      el('div', { class: 'chips' },
-        el('span', { class: 'chip' }, (UNIT_ICONS[L.unit] || '📘') + ' ' + UNITS[L.unit]),
-        el('span', { class: 'chip' }, '📖 ' + L.pages)),
+    el('header', { class: 'top' },
+      el('div', { class: 'eyebrow' }, `달성 수학 10분 ${GRADE} · ` + UNITS[L.unit]),
       el('h1', {}, el('span', { class: 'no' }, no), L.title),
-      el('p', {}, '연습장에 풀고, 최종 답만 쓰고 채점해요.'),
-      el('div', { class: 'progress' }, el('div', { class: 'bar' }, fill), ptxt)),
+      el('div', { class: 'pages' }, L.pages + ' 심화 문항 · 연습장에 풀고 답만 쓰세요')),
   ];
   if (L.shared) {
     blocks.push(el('section', { class: 'card shared' },
-      el('div', { class: 'qtext' }, '📌 ' + L.shared.text),
+      el('div', { class: 'qtext' }, '※ ' + L.shared.text),
       L.shared.img ? figure(L.shared.img) : null,
       L.shared.table ? dataTable(L.shared.table) : null));
   }
@@ -151,7 +139,7 @@ function renderLesson(no) {
           class: 'ans' + (p.kind === 'nums' || p.wide ? ' wide' : '') + (p.kind === 'word' ? ' word' : ''),
           type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false',
           inputmode: p.kind === 'num' ? 'decimal' : 'text',
-          placeholder: p.kind === 'nums' ? '예: 10, 20, 30' : '답',
+          placeholder: p.kind === 'nums' ? '예: 10, 20, 30' : '',
           'aria-label': (p.label || '답') + ' 입력',
         });
         inp.value = saved || '';
@@ -172,7 +160,7 @@ function renderLesson(no) {
           return b;
         });
         box.append(...btns);
-        if (p.multi) box.append(el('div', { class: 'hint' }, '👆 알맞은 것을 모두 누르세요'));
+        if (p.multi) box.append(el('div', { class: 'hint' }, '알맞은 것을 모두 누르세요'));
         part.append(box);
         if (p.stack) part.style.width = '100%';
         getters.push(() => sel.slice());
@@ -224,7 +212,7 @@ function renderLesson(no) {
     blocks.push(card);
   });
 
-  blocks.push(clear, el('p', { class: 'foot' }, el('a', { class: 'back', href: '#' }, `← ${GRADE} 차시 목록`)));
+  blocks.push(scoreEl, el('p', { style: 'text-align:center' }, el('a', { class: 'back', href: '#' }, `← ${GRADE} 차시 목록`)));
   app.replaceChildren(...blocks);
   updateScore();
   window.scrollTo(0, 0);

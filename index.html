@@ -4,23 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>달성 수학 10분</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
-<link rel="stylesheet" href="assets/quiz.css">
+<style>
+  :root { color-scheme: light; --bg: #f4f6f9; --card: #fff; --ink: #1d2433; --muted: #5d6779; --line: #d9dee7; --accent: #2f6fde; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); word-break: keep-all;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  .eyebrow { font-size: 15px; color: var(--muted); font-weight: 600; }
+  h1 { font-size: 28px; margin: 4px 0 6px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  a.grade, div.grade {
+    display: block; text-decoration: none; color: var(--ink); background: var(--card);
+    border: 2px solid var(--line); border-radius: 16px; padding: 20px 16px; text-align: center;
+  }
+  a.grade { border-color: var(--accent); }
+  .grade b { display: block; font-size: 30px; color: var(--accent); }
+  .grade span { font-size: 15px; color: var(--muted); }
+  div.grade { opacity: .55; }
+  div.grade b { color: var(--muted); }
+</style>
 </head>
 <body>
 <main>
-  <header class="hero" style="text-align:center;padding-top:28px">
-    <div class="chips" style="justify-content:center"><span class="chip">🏫 대구광역시달성교육지원청</span></div>
-    <h1 style="font-size:42px"><span class="grad-text">달성 수학 10분</span></h1>
-    <p>교재의 QR을 찍으면 그 차시 심화 문항이 바로 열려요 ✨</p>
-  </header>
-  <div class="grades">
-    <div class="grade"><span class="emoji">🌱</span><b>3-1</b><span>준비 중</span></div>
-    <a class="grade" href="4-1/"><span class="emoji">🚀</span><b>4-1</b><span>각도 · 막대그래프</span></a>
-    <div class="grade"><span class="emoji">🌟</span><b>5-1</b><span>준비 중</span></div>
-    <div class="grade"><span class="emoji">🏆</span><b>6-1</b><span>준비 중</span></div>
+  <div class="eyebrow">대구광역시달성교육지원청</div>
+  <h1>달성 수학 10분 · 심화 문항</h1>
+  <p class="lead">교재의 QR을 찍으면 그 차시 문항이 바로 열립니다.</p>
+  <div class="grid">
+    <div class="grade"><b>3-1</b><span>준비 중</span></div>
+    <a class="grade" href="4-1/"><b>4-1</b><span>각도 · 막대그래프</span></a>
+    <div class="grade"><b>5-1</b><span>준비 중</span></div>
+    <div class="grade"><b>6-1</b><span>준비 중</span></div>
   </div>
 </main>
 </body>

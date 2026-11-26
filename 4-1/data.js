@@ -8,7 +8,6 @@
      nums  : 수 여러 개     {kind:'nums', ans:[105,120], unit:'°'}
    ============================================================ */
 const GRADE = '4-1';
-const UNIT_ICONS = { 2: '📐', 5: '📊' };
 const UNITS = { 2: 'Ⅱ. 각도', 5: 'Ⅴ. 막대그래프' };
 
 const LESSONS = {
