@@ -20,6 +20,7 @@
   select, .btn { font: inherit; font-size: 16px; padding: 7px 12px; border-radius: 10px; border: 2px solid var(--line); background: #fff; color: var(--ink); }
   .btn { text-decoration: none; cursor: pointer; font-weight: 600; color: var(--accent); white-space: nowrap; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .6; cursor: wait; }
   .seg { display: inline-flex; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
   .seg button { font: inherit; font-size: 16px; border: none; background: #fff; padding: 7px 12px; cursor: pointer; color: var(--muted); }
   .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
@@ -45,6 +46,8 @@
     .grid { grid-template-columns: repeat(4, 1fr); }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 <main>
@@ -65,62 +68,133 @@
     </div>
     <span class="count" id="count"></span>
     <span class="spacer"></span>
-    <a class="btn" id="zipReady" download>⬇ 문항 있는 차시 ZIP</a>
-    <a class="btn primary" id="zipAll" download>⬇ 전체 ZIP</a>
+    <button type="button" class="btn" id="zipReady">⬇ 문항 있는 차시 ZIP</button>
+    <button type="button" class="btn primary" id="zipAll">⬇ 전체 ZIP</button>
     <button type="button" class="btn" onclick="window.print()">🖨 인쇄</button>
   </div>
 
-  <div id="list"></div>
+  <div id="list"><p class="empty">QR을 만드는 중…</p></div>
 </main>
 
 <script>
+/* QR은 학년 폴더의 data.js(차시 목록)를 읽어서 이 화면에서 바로 그립니다.
+   → 새 학년·차시를 data.js 에 넣고 배포하면 QR 보관함에 저절로 나타남.
+   QR이 가리키는 주소는 아래 BASE_URL 로 고정 (교재에 인쇄되는 주소). */
+const BASE_URL = 'https://2027-math10.mathedu.workers.dev/';
+const GRADES = ['3-1', '4-1', '5-1', '6-1'];   // 폴더가 있는 학년만 보임
+
 const $ = s => document.querySelector(s);
-let manifest = {}, show = 'ready';
+const catalog = {};   // grade → { lessons: [...] }
+let show = 'ready';
 try { show = localStorage.getItem('qr-show') || 'ready'; } catch (e) {}
 
+async function loadGrade(g) {
+  const res = await fetch(`/${g}/data.js`, { cache: 'no-store' });
+  if (!res.ok) return null;
+  const src = await res.text();
+  const d = new Function(src + `;return { UNITS, LESSONS, PER: typeof LESSONS_PER_UNIT === 'number' ? LESSONS_PER_UNIT : 6 };`)();
+  const lessons = Object.keys(d.UNITS).map(Number).sort((a, b) => a - b).flatMap(u =>
+    Array.from({ length: d.PER }, (_, k) => {
+      const no = String((u - 1) * d.PER + k + 1).padStart(2, '0');
+      const L = d.LESSONS[no];
+      return { grade: g, no, unit: u, unitName: d.UNITS[u], title: L ? L.title : '', ready: !!L, url: `${BASE_URL}${g}/#${no}` };
+    }));
+  return { lessons };
+}
+
+/* QR + 아래 글씨(학년·차시 / 제목)를 PNG로 그림 — 교재용 고해상도 */
+function drawQR(t) {
+  const qr = qrcode(0, 'M');
+  qr.addData(t.url);
+  qr.make();
+  const n = qr.getModuleCount(), cell = 16, quiet = 4;
+  const w = (n + quiet * 2) * cell;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = w + 150;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = '#000';
+  for (let r = 0; r < n; r++) for (let col = 0; col < n; col++)
+    if (qr.isDark(r, col)) x.fillRect((col + quiet) * cell, (r + quiet) * cell, cell, cell);
+  x.textAlign = 'center'; x.textBaseline = 'top';
+  x.font = 'bold 44px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+  x.fillText(`${t.grade} · ${t.no}차시 심화`, w / 2, w - 4);
+  x.font = '34px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+  x.fillText(t.title || t.unitName, w / 2, w + 60, w - 20);
+  return c;
+}
+const pngCache = new Map();
+function pngURL(t) {
+  const k = t.grade + t.no;
+  if (!pngCache.has(k)) pngCache.set(k, drawQR(t).toDataURL('image/png'));
+  return pngCache.get(k);
+}
+const fileName = t => `${t.grade}_${t.no}차시.png`;
+
 function render() {
-  const g = $('#grade').value, M = manifest[g];
-  if (!M) { $('#list').innerHTML = '<p class="empty">QR이 없습니다.</p>'; return; }
-  $('#zipAll').href = 'qr/' + M.zipAll;
-  $('#zipReady').href = 'qr/' + M.zipReady;
+  const g = $('#grade').value, M = catalog[g];
+  const list = $('#list');
+  if (!M) { list.innerHTML = '<p class="empty">QR이 없습니다.</p>'; return; }
   document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.show === show)));
   const items = M.lessons.filter(t => show === 'all' || t.ready);
   $('#count').textContent = `${items.length}개 (전체 ${M.lessons.length}개 중 문항 있음 ${M.lessons.filter(t => t.ready).length}개)`;
-  const list = $('#list');
   list.replaceChildren();
   const units = [...new Set(items.map(t => t.unit))];
-  if (!units.length) { list.innerHTML = '<p class="empty">문항이 들어간 차시가 아직 없어요.</p>'; return; }
+  if (!units.length) { list.innerHTML = '<p class="empty">문항이 들어간 차시가 아직 없어요. "전체 차시"를 누르면 미리 만든 QR을 볼 수 있어요.</p>'; return; }
   for (const u of units) {
     const its = items.filter(t => t.unit === u);
     const h = document.createElement('div'); h.className = 'unitname'; h.textContent = `${g} · ${its[0].unitName}`;
     const grid = document.createElement('div'); grid.className = 'grid';
     for (const t of its) {
       const c = document.createElement('div'); c.className = 'qr' + (t.ready ? ' ready' : '');
-      const name = `${g}_${t.no}차시.png`;
+      const src = pngURL(t);
       c.innerHTML = `<span class="badge">${t.ready ? '문항 있음' : '준비 중'}</span>
-        <img src="qr/${t.file}" alt="${g} ${t.no}차시 QR" loading="lazy">
-        <div class="no">${t.no}차시</div><div class="title"></div>
-        <div class="url"></div>
-        <div class="row"><a class="btn" download="${name}" href="qr/${t.file}">⬇ PNG</a><a class="btn" target="_blank" rel="noopener" href="${t.url}">열어 보기</a></div>`;
+        <img alt="${g} ${t.no}차시 QR"><div class="no">${t.no}차시</div><div class="title"></div><div class="url"></div>
+        <div class="row"><a class="btn dl">⬇ PNG</a><a class="btn" target="_blank" rel="noopener">열어 보기</a></div>`;
+      c.querySelector('img').src = src;
       c.querySelector('.title').textContent = t.title || t.unitName;
       c.querySelector('.url').textContent = t.url;
+      const dl = c.querySelector('.dl'); dl.href = src; dl.download = fileName(t);
+      c.querySelector('.row a[target]').href = t.url;
       grid.append(c);
     }
     list.append(h, grid);
   }
 }
 
+async function downloadZip(readyOnly, btn) {
+  const g = $('#grade').value, M = catalog[g];
+  if (!M) return;
+  const items = M.lessons.filter(t => !readyOnly || t.ready);
+  const label = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…';
+  try {
+    const zip = new JSZip();
+    for (const t of items) zip.file(fileName(t), pngURL(t).split(',')[1], { base64: true });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `${g}_QR_${readyOnly ? '문항있음' : '전체'}.zip` });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
+
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
   show = b.dataset.show; try { localStorage.setItem('qr-show', show); } catch (e) {} render();
 }));
 $('#grade').addEventListener('change', render);
+$('#zipAll').addEventListener('click', e => downloadZip(false, e.currentTarget));
+$('#zipReady').addEventListener('click', e => downloadZip(true, e.currentTarget));
 
-fetch('qr/manifest.json', { cache: 'no-store' }).then(r => r.json()).then(m => {
-  manifest = m;
-  const grades = Object.keys(m).sort();
+(async () => {
+  if (typeof qrcode !== 'function') { $('#list').innerHTML = '<p class="empty">QR 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; return; }
+  await document.fonts.ready;
+  for (const g of GRADES) {
+    try { const m = await loadGrade(g); if (m) catalog[g] = m; } catch (e) { console.warn(g, e); }
+  }
+  const grades = Object.keys(catalog);
   $('#grade').replaceChildren(...grades.map(g => Object.assign(document.createElement('option'), { value: g, textContent: g })));
+  if (grades.includes('4-1')) $('#grade').value = '4-1';
   render();
-}).catch(() => { $('#list').innerHTML = '<p class="empty">QR 목록을 불러오지 못했어요.</p>'; });
+})();
 </script>
 </body>
 </html>
