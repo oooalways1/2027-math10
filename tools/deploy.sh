@@ -18,6 +18,9 @@ for d in [0-9]-[0-9]; do
   [ -d "$d" ] && cp -r "$d" dist/
 done
 cp admin/index.html dist/admin/   # 로그인해야 열림 — src/worker.js
+# 지금 사이트가 어느 커밋으로 만들어졌는지: /version.txt
+sha="${WORKERS_CI_COMMIT_SHA:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}"
+printf '%s\n%s\n' "${sha:0:7}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/version.txt
 
 echo "올릴 파일:"; (cd dist && find . -type f | sort)
 [ "${1:-}" = "--build-only" ] && exit 0
