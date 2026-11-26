@@ -229,4 +229,36 @@ body.scratch-on main { padding-bottom: 120px; }
 #inkpad .padnote { flex: 1; font-size: 14px; color: var(--muted); }
 #inkpad .padok { font: inherit; font-weight: 700; font-size: 18px; padding: 10px 22px; border: none; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer; }
 body.pad-open { overflow: hidden; }
-@media print { #scratch, .scratchfab, .scratchbar, #inkpad, .inkbtn { display: none !important; } }
+@media print { #scratch, .scratchfab, .scratchbar, #inkpad, .inkbtn, svg.measure { display: none !important; } }
+
+/* 📐 각도기 · 📏 자 */
+svg.measure { position: absolute; z-index: 6; pointer-events: none; overflow: visible; user-select: none; -webkit-user-select: none; }
+svg.measure .mbody { fill: rgba(214, 232, 255, .72); stroke: #2f6fde; stroke-width: 2; pointer-events: all; cursor: move; touch-action: none; }
+svg.measure .mline { fill: none; stroke: #8fb3ee; stroke-width: 1.5; }
+svg.measure .tick { stroke: #1d2433; stroke-width: 1; }
+svg.measure .num { font: 600 13px "Pretendard", "Malgun Gothic", sans-serif; text-anchor: middle; dominant-baseline: middle; fill: #1d2433; }
+svg.measure .num.in { fill: #d6402f; font-size: 12px; }
+svg.measure .base { stroke: #1d2433; stroke-width: 1.5; }
+svg.measure .center { fill: #1d2433; }
+svg.measure .centerx { stroke: #1d2433; stroke-width: 1.5; }
+svg.measure .arm { stroke: #d6402f; stroke-width: 2; }
+svg.measure .knob { fill: rgba(214, 64, 47, .85); stroke: #fff; stroke-width: 2; pointer-events: all; cursor: grab; touch-action: none; }
+svg.measure .rotate { pointer-events: all; cursor: grab; touch-action: none; }
+svg.measure .handle { fill: #2f6fde; stroke: #fff; stroke-width: 2; }
+svg.measure .handletxt { fill: #fff; font: 700 20px sans-serif; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+svg.measure .readout rect { fill: #fff; stroke: #d9dee7; stroke-width: 1.5; }
+svg.measure .readout text { font: 700 15px "Pretendard", "Malgun Gothic", sans-serif; text-anchor: middle; dominant-baseline: middle; }
+svg.measure .readout .out { fill: #1d2433; }
+svg.measure .readout .in { fill: #d6402f; }
+svg.measure.ruler .mbody { fill: rgba(255, 244, 196, .82); stroke: #c9a227; }
+svg.measure .unitcm { font: 600 12px sans-serif; text-anchor: end; fill: #5d6779; }
+svg.measure .rlabel { font: 700 15px "Pretendard", "Malgun Gothic", sans-serif; text-anchor: middle; fill: #d6402f; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+.scratchbar .tool.protractor[aria-pressed="true"], .scratchbar .tool.ruler[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+svg.measure.snapped .center { fill: #17924a; }
+svg.measure.snapped .centerx { stroke: #17924a; stroke-width: 2.5; }
+body { position: relative; }
+#measurelayer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 6; }
+@media (max-width: 520px) {
+  .scratchbar { gap: 4px; padding: 6px; bottom: 8px; }
+  .scratchbar .tool { font-size: 13px; padding: 6px 8px; }
+}

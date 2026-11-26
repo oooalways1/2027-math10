@@ -95,7 +95,7 @@ const el = (tag, attrs = {}, ...kids) => {
 };
 
 function figure(src, alt) {
-  const img = el('img', { src: 'img/' + src, alt: alt || '문제 그림', loading: 'lazy' });
+  const img = el('img', { src: 'img/' + src, alt: alt || '문제 그림', loading: 'lazy', 'data-fig': src });
   img.addEventListener('click', () => openZoom(img.src));
   return el('figure', {}, img, el('figcaption', {}, '그림을 누르면 크게 볼 수 있어요'));
 }

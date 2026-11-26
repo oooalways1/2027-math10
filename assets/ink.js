@@ -80,6 +80,8 @@ function scratchInit() {
   mk('eraser', '🧽 지우개', '지우개', () => scratchTool('eraser'));
   mk('undo', '↶', '되돌리기', () => { const s = scratchStrokes(); s.pop(); scratchRedraw(); });
   mk('clear', '🗑', '모두 지우기', () => { scratchStrokes().length = 0; scratchRedraw(); });
+  scratch.protBtn = mk('protractor', '📐 각도기', '각도기를 꺼내요 (끌어서 옮기고, ↻ 손잡이로 돌려요)', () => measureToggle('protractor'));
+  scratch.rulerBtn = mk('ruler', '📏 자', '자를 꺼내요 (끌어서 옮기고, ↻ 손잡이로 돌려요)', () => measureToggle('ruler'));
   scratch.panBtn = mk('pan', '✋ 화면 움직이기', '필기를 잠깐 멈추고 화면을 위아래로 움직여요', () => scratchPan(!scratch.pan));
   mk('done primary', '필기 끝', '필기를 끝내요 (쓴 것은 남아요)', () => scratchMode(false));
   bar.querySelectorAll('.tool.color').forEach(b => b.addEventListener('click', () => { scratch.color = b.dataset.color; scratchTool('pen'); }));
@@ -147,12 +149,14 @@ function scratchPan(on) {
 function scratchMode(on) {
   scratch.on = on;
   document.body.classList.toggle('scratch-on', on);
+  if (!on) { measureHide('protractor'); measureHide('ruler'); }
   scratchPan(false);
   scratchFit();
 }
 /* quiz.js 의 route() 가 화면을 바꿀 때마다 부름. key 가 없으면(목록 화면) 필기 숨김 */
 function scratchSwitch(key) {
   scratchInit();
+  if (!key || key !== scratch.key) { measureHide('protractor'); measureHide('ruler'); }
   if (!key) scratchMode(false);
   scratch.key = key;
   document.body.classList.toggle('scratch-avail', !!key);
