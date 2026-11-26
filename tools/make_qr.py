@@ -12,7 +12,7 @@ from pathlib import Path
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 
-BASE_URL = 'https://oooalways1.github.io/2027-math10/'
+BASE_URL = 'https://2027-math10.mathedu.workers.dev/'
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -26,7 +26,7 @@ def font(size, bold=False):
 
 
 def lessons(grade):
-    html = (ROOT / grade / 'index.html').read_text(encoding='utf-8')
+    html = (ROOT / grade / 'data.js').read_text(encoding='utf-8')
     return re.findall(r"'(\d\d)':\s*\{\s*unit:\s*\d+,\s*title:\s*'([^']+)'", html)
 
 
@@ -35,7 +35,7 @@ def main(grade, base=BASE_URL):
     out.mkdir(parents=True, exist_ok=True)
     for no, title in lessons(grade):
         url = f'{base}{grade}/#{no}'
-        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=16, border=3)
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=16, border=4)
         qr.add_data(url)
         qr.make(fit=True)
         q = qr.make_image(fill_color='black', back_color='white').convert('RGB')

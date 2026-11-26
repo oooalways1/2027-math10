@@ -4,3 +4,11 @@
 !README.md
 .claude/
 __pycache__/
+dist/
+node_modules/
+.wrangler/
+
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
