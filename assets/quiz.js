@@ -10,14 +10,36 @@ function parseNum(raw, unit) {
   // 대분수 "2 1/4" 는 띄어쓰기를 지우기 전에 처리
   const mixed = s.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)\s*$/);
   if (mixed) return +mixed[1] + (+mixed[2]) / (+mixed[3]);
-  s = noSpace(s).replace(/,/g, '');
+  s = noSpace(s).replace(/,/g, '').replace(/[.!~]+$/, '').replace(/(입니다|이에요|예요|이요|이다)$/, '');
   const units = unit ? [unit, ...UNIT_WORDS] : UNIT_WORDS;
   for (const u of units) if (u && s.endsWith(u)) { s = s.slice(0, -u.length); break; }
   s = s.replace(/°$/, '');
   let m;
   if (/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s);
   if ((m = s.match(/^(\d+)\/(\d+)$/)) && +m[2] !== 0) return +m[1] / +m[2];
-  return NaN;
+  return koreanNum(s);
+}
+
+/* 한글로 쓴 수: 두 개, 세 배, 열두, 스물다섯, 백오십, 삼십이 … */
+const KO_NATIVE_TENS = { 열: 10, 스물: 20, 스무: 20, 서른: 30, 마흔: 40, 쉰: 50, 예순: 60, 일흔: 70, 여든: 80, 아흔: 90 };
+const KO_NATIVE_ONES = { 하나: 1, 한: 1, 둘: 2, 두: 2, 셋: 3, 세: 3, 석: 3, 넷: 4, 네: 4, 넉: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9 };
+const KO_SINO_DIGITS = { 영: 0, 공: 0, 일: 1, 이: 2, 삼: 3, 사: 4, 오: 5, 육: 6, 칠: 7, 팔: 8, 구: 9 };
+const KO_SINO_UNITS = { 십: 10, 백: 100, 천: 1000 };
+const KO_NATIVE_RE = new RegExp(`^(${Object.keys(KO_NATIVE_TENS).join('|')})?(${Object.keys(KO_NATIVE_ONES).sort((a, b) => b.length - a.length).join('|')})?$`);
+
+function koreanNum(s) {
+  if (!s) return NaN;
+  // 고유어: 하나~아흔아홉
+  const n = s.match(KO_NATIVE_RE);
+  if (n && (n[1] || n[2])) return (KO_NATIVE_TENS[n[1]] || 0) + (KO_NATIVE_ONES[n[2]] || 0);
+  // 한자어: 일~구천구백구십구 (앞에 고유어가 아닌 글자만)
+  let total = 0, cur = null;
+  for (const ch of s) {
+    if (ch in KO_SINO_DIGITS) { if (cur !== null) return NaN; cur = KO_SINO_DIGITS[ch]; }
+    else if (ch in KO_SINO_UNITS) { total += (cur === null ? 1 : cur) * KO_SINO_UNITS[ch]; cur = null; }
+    else return NaN;
+  }
+  return total + (cur || 0);
 }
 const sameNum = (a, b) => Math.abs(a - b) < 1e-9;
 
