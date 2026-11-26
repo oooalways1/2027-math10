@@ -2,6 +2,7 @@
 그림/
 *.md
 !README.md
+!CLAUDE.md
 .claude/
 __pycache__/
 dist/
